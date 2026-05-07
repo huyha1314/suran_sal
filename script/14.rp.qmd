@@ -1,0 +1,282 @@
+---
+title: "WGS-bacomix"
+date: May/6/2026
+date-format: long
+
+number-sections: true
+highlight-style: pygments
+format:
+  html:
+    toc: true
+    toc-title: Contents
+    include-in-header:
+      - text: |
+          <style>
+          /* Make all iframes responsive */
+          .iframe-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            height: 0;
+            overflow: hidden;
+            margin-bottom: 1em;
+          }
+          .iframe-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 8px;
+          }
+          </style>
+      - file: header_footer/header1.html
+    include-after-body:
+      - file: header_footer/footer1.html
+    grid: 
+      body-width: 1200px
+      sidebar-width: 258px
+    code-fold: false
+    code-tools: false
+editor: visual
+---
+
+::: {#wrn-1 .callout-important}
+## Important
+
+Please keep this report inside the report folder when opening it.
+:::
+
+# Project Workflow
+
+Taxonomic classification  Gene annotation and Tree Visualization for whole shotgun sequencing data.
+
+
+Click on any section below to expand and view the details of the pipeline.
+
+::: {.callout-note collapse="true"}
+## 1. Whole Genome Sequencing & Quality Control
+* **Data:** Raw reads from an unknown organism.
+* **Deliverable:** Pre-processing and quality reports (captured in your `00_QC/sam1.report.html`).
+:::
+
+::: {.callout-note collapse="true"}
+## 2. De Novo Assembly & Quality Assessment
+* **Process:** Assembling the raw reads into contiguous sequences (your `sam1.fasta`).
+* **Validation:** Checking the assembly for structural completeness and single-copy orthologs using **BUSCO** (Enterobacteriaceae dataset).
+* **Taxonomic Quality:** Evaluating contamination and strain purity using **CheckM**.
+:::
+
+::: {.callout-note collapse="true"}
+## 3. Gene Prediction & Structural Annotation
+* **Process:** Identifying Open Reading Frames (ORFs), tRNAs, rRNAs, and non-coding regions.
+* **Tool Used:** **Bakta** (which provided your `sam1.tsv` and summary statistics).
+:::
+
+::: {.callout-note collapse="true"}
+## 4. Functional Annotation
+* **Process:** Assigning biological meaning and metabolic pathways to the predicted genes.
+* **Tools Used:** **EggNOG-mapper** for evolutionary orthology, mapping genes to **COG categories** (Clusters of Orthologous Groups) and **KEGG pathways** (metabolic networks).
+:::
+
+::: {.callout-note collapse="true"}
+## 5. Phylogenetic Tree Visualization (Species Placement)
+* **Process:** Determining exactly where this unknown sample sits in the evolutionary tree of life.
+* **Tools Used:** Extracting 120 bacterial marker genes using **GTDB-Tk**, building a Maximum-Likelihood tree with bootstraps using **IQ-TREE**, and visualizing it interactively and statically using **R (`ggtree`)**.
+:::
+
+# Bioinformatic workflow
+
+```{mermaid}
+%%{init: {'themeVariables': { 'fontSize': '16px'}, 'flowchart': {'nodeSpacing': 40, 'rankSpacing': 50}}}%%
+flowchart TD
+    %% Nodes
+    A[("FASTQ Raw Data")] 
+    B["1. QC & Trimming<br/>(1.fastp.sh)"]
+    C["2. Host/Contaminant Removal<br/>(2.bbduk.sh)"]
+    
+    %% Kraken taxonomy branch
+    Tax["Taxonomic Profiling<br/>(k2.sh / k2_assembly.sh)"]
+    
+    D["3. De Novo Assembly<br/>(3.megahit.sh)"]
+    P1["4. Pre-Scaffold Polishing<br/>(4.pilon.sh)"]
+    K["5. Scaffolding<br/>(5.sspaces.sh)"]
+    P2["6. Post-Scaffold Polishing<br/>(6.pilon_ss.sh)"]
+    
+    H["7. Structural Annotation<br/>(7.bakta.sh)"]
+    E1{{"8. Quality & Taxonomy<br/>(8.checkm_GTDB_wgs.sh)"}}
+    I["9. Functional Annotation<br/>(9.eggnog.sh)"]
+    E2{{"10. Assessment<br/>(10.busco.sh)"}}
+    
+    T["12. Phylogeny<br/>(12.build_tree.sh)"]
+    V["13. Visualization<br/>(13.draw.sh / Rdraw.R)"]
+    
+    J[("Final Annotated<br/>Genome & Tree")]
+
+    %% Connections
+    A --> B --> C 
+    C -.-> Tax
+    C --> D
+    D --> P1 --> K --> P2
+    P2 --> H
+    H --> E1
+    E1 --> I
+    I --> E2
+    E2 --> T
+    T --> V --> J
+
+    %% Styling
+    classDef input fill:#2b2d42,color:#fff,stroke:none
+    classDef process fill:#edf2f4,stroke:#8d99ae,color:#2b2d42
+    classDef check fill:#ffddd2,stroke:#e29578,color:#2b2d42
+    classDef output fill:#83c5be,stroke:#006d77,color:#fff,stroke-width:2px
+    classDef sideprocess fill:#e9edc9,stroke:#ccd5ae,color:#2b2d42,stroke-dasharray: 5 5
+
+    class A input
+    class B,C,D,P1,K,P2,H,I,T,V process
+    class E1,E2 check
+    class J output
+    class Tax sideprocess
+```
+
+# Quality Control
+```{=html}
+<iframe width="100%" height="800" src="00_QC/sam1.report.html" title="MultiQC Report" data-external="1" style="border:none;"></iframe>
+<br>
+<a href="00_QC/sam1.report.html" download="sam1.report.html" class="btn btn-primary" style="margin-top: 10px;">
+  <i class="bi bi-download"></i> Download Full QC HTML
+</a>
+```
+# Genome Assembly Stats and Gene annotation ( BATKA )
+
+## Assembly_Stats and Gene annotation ( BATKA )
+::: {.callout-tip}
+## What is Bakta?
+Bakta provides **structural and functional annotation** of the bacterial genome. It identifies where genes are located (structural) and predicts what those genes actually do (functional) based on standardized databases.
+:::
+
+```{=html}
+<iframe width="100%" height="600" src="03_Bakta/bakta_report.html" title="Bakta Annotation Stats" data-external="1" style="border:none;"></iframe>
+<br>
+<a href="data/sam1.txt" download="sam1_summary.txt" class="btn btn-primary" style="margin-top: 10px;">
+  <i class="bi bi-download"></i> Download Bakta Summary (TXT)
+</a>
+<a href="data/sam1.tsv" download="sam1_annotation.tsv" class="btn btn-secondary" style="margin-top: 10px;">
+  <i class="bi bi-download"></i> Download Full Annotation (TSV)
+</a>
+```
+
+# Assembly Taxonomy & Quality
+::: {.callout-tip}
+Genome assembly quality assessment is a crucial step in validating the reliability of the assembled sequences. This process evaluates the completeness and contamination levels of the reconstructed genome to ensure it is of sufficient quality for downstream analysis. We utilize two complementary tools for this assessment: BUSCO to check for universal single-copy orthologs, and CheckM2 to estimate genome completeness and contamination using machine learning models.
+:::
+
+## CheckM Summary
+::: {.callout-tip}
+After data processing, the sequencing reads are assembled into contigs. The quality of the resulting assembly is subsequently assessed using CheckM2, which estimates genome completeness and contamination levels using machine learning models. This quality control step is critical to evaluate the reliability of the reconstructed genome before proceeding to downstream taxonomic classification and gene annotation.
+:::
+
+```{=html}
+<iframe width="100%" height="300" src="04_Taxonomy/taxonomy_report_checkm.html" title="CheckM Summary" data-external="1" style="border:none;"></iframe>
+<br>
+<a href="data/checkm_summary.txt" download="checkm_summary.txt" class="btn btn-primary" style="margin-top: 10px;">
+  <i class="bi bi-download"></i> Download CheckM Data
+</a>
+```
+
+## GTDB-Tk Classification
+::: {.callout-tip}
+Taxonomic classification of high-quality assembly was performed using GTDB-Tk (Genome Taxonomy Database Toolkit), which classifies bacterial and archaeal genomes based on the Genome Taxonomy Database (GTDB). GTDB-Tk uses a reference tree of bacterial and archaeal genomes to assign taxonomy from domain to species level. The tool provides detailed classification information including the closest reference genome and its similarity measures.
+:::
+
+```{=html}
+<iframe width="100%" height="300" src="04_Taxonomy/taxonomy_report_gtdbtk.html" title="GTDB-Tk Summary" data-external="1" style="border:none;"></iframe>
+<br>
+<a href="04_Taxonomy/taxonomy_report.pdf" download="taxonomy_report.pdf" class="btn btn-primary" style="margin-top: 10px;">
+  <i class="bi bi-file-earmark-pdf"></i> Download Taxonomy Report (PDF)
+</a>
+<a href="data/gtdbtk.bac120.summary.tsv" download="gtdbtk.bac120.summary.tsv" class="btn btn-secondary" style="margin-top: 10px;">
+  <i class="bi bi-download"></i> Download GTDB-Tk Raw Data
+</a>
+```
+
+# BUSCO Completeness Assessment
+::: {.callout-tip}
+BUSCO (Benchmarking Universal Single-Copy Orthologs) provides a quantitative assessment of genome assembly completeness based on evolutionarily-informed expectations of gene content. The assessment evaluates how many expected genes are present, fragmented, or missing.
+::: 
+
+```{=html}
+<iframe width="100%" height="650" src="01_BUSCO/BUSCO_Report.html" title="BUSCO Summary" data-external="1" style="border:none;"></iframe>
+<br>
+<a href="01_BUSCO/BUSCO_Report.pdf" download="BUSCO_Report.pdf" class="btn btn-primary" style="margin-top: 10px;">
+  <i class="bi bi-file-earmark-pdf"></i> Download BUSCO Plot (PDF)
+</a>
+<a href="data/short_summary.specific.enterobacteriaceae_odb12.sam1_busco.json" download="busco_summary.json" class="btn btn-secondary" style="margin-top: 10px;">
+  <i class="bi bi-download"></i> Download BUSCO JSON
+</a>
+```
+
+# Functional Annotation
+## COG Categories Overview
+::: {.callout-tip}
+Gene annotation was performed to identify and characterize the functional elements within the assembled genome. The COG (Clusters of Orthologous Groups) categories provide a standardized classification system for protein functions.
+:::
+
+```{=html}
+<iframe width="100%" height="650" src="02_Functional/01_COG_Grouped.html" title="COG Categories" data-external="1" style="border:none;"></iframe>
+<br>
+<a href="02_Functional/01_COG_Grouped.pdf" download="01_COG_Grouped.pdf" class="btn btn-primary" style="margin-top: 10px;">
+  <i class="bi bi-file-earmark-pdf"></i> Download COG Plot (PDF)
+</a>
+<a href="02_Functional/01_COG_Grouped.png" download="01_COG_Grouped.png" class="btn btn-secondary" style="margin-top: 10px;">
+  <i class="bi bi-image"></i> Download COG Plot (PNG)
+</a>
+```
+
+## KEGG Functional Pathways
+### All KEGG Pathways Data
+
+```{=html}
+<iframe width="100%" height="550" src="02_Functional/All_KEGG_Table.html" title="KEGG Pathway Table" data-external="1" style="border:none;"></iframe>
+<br>
+<a href="02_Functional/All_KEGG_Pathways.csv" download="All_KEGG_Pathways.csv" class="btn btn-primary" style="margin-top: 10px;">
+  <i class="bi bi-file-earmark-spreadsheet"></i> Download KEGG Data (CSV)
+</a>
+```
+
+### Top 50 KEGG Pathways Plot
+
+```{=html}
+<iframe width="100%" height="700" src="02_Functional/02_Top50_KEGG_Plot_Interactive.html" title="Top 50 KEGG Plot" data-external="1" style="border:none;"></iframe>
+<br>
+<a href="02_Functional/02_Top50_KEGG_Plot.pdf" download="02_Top50_KEGG_Plot.pdf" class="btn btn-primary" style="margin-top: 10px;">
+  <i class="bi bi-file-earmark-pdf"></i> Download KEGG Plot (PDF)
+</a>
+```
+
+# Phylogenetic Analysis
+```{=html}
+<!-- Using an image tag for the PNG so it loads cleanly natively in HTML -->
+<img src="05_Phylogeny/sam1_final_publication_tree.png" alt="Phylogenetic Tree" style="width:100%; max-width:1200px; height:auto; border: 1px solid #ccc;">
+<br>
+<a href="05_Phylogeny/sam1_final_publication_tree.pdf" download="sam1_final_publication_tree.pdf" class="btn btn-primary" style="margin-top: 10px;">
+  <i class="bi bi-file-earmark-pdf"></i> Download Publication Tree (PDF)
+</a>
+<a href="data/sam1_annotated_tree.treefile" download="sam1_annotated_tree.treefile" class="btn btn-secondary" style="margin-top: 10px;">
+  <i class="bi bi-diagram-3"></i> Download Raw Treefile (Newick)
+</a>
+```
+
+# References
+Manni, M., Berkeley, M. R., Seppey, M., Simão, F. A., & Zdobnov, E. M. (2021). BUSCO Update: Novel and Streamlined Workflows along with Broader and Deeper Phylogenetic Coverage for Scoring of Eukaryotic, Prokaryotic, and Viral Genomes. Molecular Biology and Evolution, 38(10), 4647–4654. https://doi.org/10.1093/molbev/msab199
+
+Chklovski, A., Parks, D. H., Woodcroft, B. J., & Tyson, G. W. (2023). CheckM2: a rapid, scalable and accurate tool for assessing microbial genome quality using machine learning. Nature Methods, 20(8), 1203-1212. https://doi.org/10.1038/s41592-023-01940-w
+
+Chaumeil, P. A., Mussig, A. J., Hugenholtz, P., & Parks, D. H. (2022). GTDB-Tk v2: memory friendly classification with the genome taxonomy database. Bioinformatics, 38(23), 5315-5316. https://doi.org/10.1093/bioinformatics/btac672
+
+Schwengers, O., Jelonek, L., Giber, U. et al. (2021). Bakta: rapid and standardized annotation of bacterial genomes via alignment-free sequence identification. Microbial Genomics, 7(11), 000685. https://doi.org/10.1099/mgen.0.000685
+
+Cantalapiedra, C. P., Hernández-Plaza, A., Letunic, I., Bork, P., & Huerta-Cepas, J. (2021). eggNOG-mapper v2: Functional Annotation, Orthology Assignments, and Domain Prediction at the Metagenomic Scale. Molecular Biology and Evolution, 38(12), 5825–5829. https://doi.org/10.1093/molbev/msab293
+
+Tatusov, R. L., Galperin, M. Y., Natale, D. A., & Koonin, E. V. (2000). The COG database: a tool for genome-scale analysis of protein functions and evolution. Nucleic Acids Research, 28(1), 33-36. https://doi.org/10.1093/nar/28.1.33
