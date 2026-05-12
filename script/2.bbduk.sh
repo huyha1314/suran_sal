@@ -3,7 +3,7 @@
 #SBATCH --output=./log/bbduk_%j.out
 #SBATCH --error=./log/bbduk_%j.err
 #SBATCH --ntasks=1
-#SBATCH --mem=164G
+#SBATCH --mem=256G
 #SBATCH --cpus-per-task=64
 
 # Ensure log directories exist

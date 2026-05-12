@@ -4,3 +4,7 @@ log/
 data/
 rp/
 busco_downloads/
+# pixi environments
+.pixi/*
+!.pixi/config.toml
+phage/
