@@ -12,12 +12,12 @@ May 7 2026 - update soon
 Update may 9 
 Viral taxanomic and functional annotation by pixi 
 
-# setup pixi
+# Setup pixi
 ```bash
 pixi init
 pixi project channel add conda-forge
 pixi project channel add bioconda
-pixi add fastp spades flye checkv genomad quast
+pixi add fastp spades flye checkv genomad quast 
 ```
 
 
